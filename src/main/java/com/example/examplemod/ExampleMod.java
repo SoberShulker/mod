@@ -1,15 +1,3 @@
-package com.example.examplemod;
-
-import net.minecraft.init.Blocks;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraft.client.Minecraft;
-
 @Mod(modid = ExampleMod.MODID, version = ExampleMod.VERSION)
 public class ExampleMod
 {
@@ -22,7 +10,8 @@ public class ExampleMod
         MinecraftForge.EVENT_BUS.register(new JumpTest());
         System.out.println("Initialization event");
     }
-    public class JumpTest {
+
+    public static class JumpTest {
         private int tickCounter = 0;
 
         @SubscribeEvent
@@ -31,15 +20,15 @@ public class ExampleMod
                 tickCounter++;
 
                 if (tickCounter >= 5) {
+                    tickCounter = 0; // reset here
+
                     Minecraft mc = Minecraft.getMinecraft();
                     if (mc.thePlayer != null && mc.thePlayer.onGround) {
-                    }
                         mc.thePlayer.motionY = 0.42F;
+                        System.out.println("Jump applied!");
                     }
                 }
-                tickCounter = 0;
-        }
-
+            }
         }
     }
-
+}
