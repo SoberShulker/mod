@@ -1,6 +1,7 @@
 package com.example.examplemod;
 
 import net.minecraft.init.Blocks;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -18,6 +19,7 @@ public class ExampleMod
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
+        MinecraftForge.EVENT_BUS.register(new JumpTest());
         System.out.println("Initialization event");
     }
     public class JumpTest {
@@ -30,13 +32,14 @@ public class ExampleMod
 
                 if (tickCounter >= 5) {
                     Minecraft mc = Minecraft.getMinecraft();
+                    if (mc.thePlayer != null && mc.thePlayer.onGround) {
+                    }
+                        mc.thePlayer.motionY = 0.42F;
+                    }
+                }
+                tickCounter = 0;
+        }
 
-                    if (mc.player != null && mc.player.onGround) {
-                    }
-                    }
-                }
-                }
         }
     }
 
-}
