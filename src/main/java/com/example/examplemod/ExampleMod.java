@@ -1,4 +1,10 @@
-@Mod(modid = ExampleMod.MODID, version = ExampleMod.VERSION)
+package com.example.examplemod;
+
+import net.minecraft.init.Blocks;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+@Mod(modid = com.example.examplemod.ExampleMod.MODID, version = com.example.examplemod.ExampleMod.VERSION)
 public class ExampleMod
 {
     public static final String MODID = "examplemod";
@@ -7,28 +13,7 @@ public class ExampleMod
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
-        MinecraftForge.EVENT_BUS.register(new JumpTest());
-        System.out.println("Initialization event");
-    }
-
-    public static class JumpTest {
-        private int tickCounter = 0;
-
-        @SubscribeEvent
-        public void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase == TickEvent.Phase.END) {
-                tickCounter++;
-
-                if (tickCounter >= 5) {
-                    tickCounter = 0; // reset here
-
-                    Minecraft mc = Minecraft.getMinecraft();
-                    if (mc.thePlayer != null && mc.thePlayer.onGround) {
-                        mc.thePlayer.motionY = 0.42F;
-                        System.out.println("Jump applied!");
-                    }
-                }
-            }
-        }
+        // some example code
+        System.out.println("DIRT BLOCK >> "+Blocks.dirt.getUnlocalizedName());
     }
 }
