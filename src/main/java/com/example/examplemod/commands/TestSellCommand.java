@@ -9,13 +9,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.init.Blocks;
 
-import java.util.Map;
+import com.example.examplemod.helpers.EconomyData;
 
-/**
- * Singleplayer test command to simulate selling items and calculating profit.
- * Usage:
- * /testsell <item> <amount> <sellPrice> [perItem=false]
- */
 public class TestSellCommand extends CommandBase {
 
     @Override
@@ -48,30 +43,21 @@ public class TestSellCommand extends CommandBase {
                 perItem = Boolean.parseBoolean(args[3]);
             }
 
-            // Retrieve purchase price per item (Java 6 safe)
-            Map priceMap = TestBuyCommand.priceMap;
-            Double val = (Double) priceMap.get(itemName);
-            double purchasePrice = (val != null) ? val.doubleValue() : 0.0;
-
-            // Compute total sell price
+            // Calculate total sell price
             double totalSellPrice = perItem ? sellPriceInput * amount : sellPriceInput;
-
-            double totalCost = purchasePrice * amount;
-            double profit = totalSellPrice - totalCost;
 
             // Remove items from inventory
             Item sellItem = getItemByName(itemName);
             int removed = removeItemsFromInventory(player, sellItem, amount);
 
-            // Chat feedback
+            // Record sale
+            EconomyData.recordSale(itemName, removed, totalSellPrice);
+
+            // Feedback
             String soldMsg = "Sold " + removed + "x " + itemName;
             if (perItem) soldMsg += " at " + sellPriceInput + " each";
             soldMsg += " for total " + totalSellPrice;
             player.addChatMessage(new ChatComponentText(soldMsg));
-
-            player.addChatMessage(new ChatComponentText(
-                    "Purchase cost: " + totalCost + ", Profit: " + profit
-            ));
 
         } catch (NumberInvalidException e) {
             player.addChatMessage(new ChatComponentText("Invalid number: " + e.getMessage()));
@@ -80,9 +66,7 @@ public class TestSellCommand extends CommandBase {
 
     private Item getItemByName(String name) {
         Item item = Item.getByNameOrId(name);
-        if (item == null) {
-            return Item.getItemFromBlock(Blocks.stone); // fallback
-        }
+        if (item == null) return Item.getItemFromBlock(Blocks.stone);
         return item;
     }
 

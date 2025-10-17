@@ -9,17 +9,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.init.Blocks;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.example.examplemod.helpers.EconomyData;
 
-/**
- * Singleplayer test command to simulate buying items and tracking purchase price.
- * Usage: /testbuy <item> <amount> <price>
- */
 public class TestBuyCommand extends CommandBase {
-
-    // Store prices per item (key = item name)
-    public static Map<String, Double> priceMap = new HashMap<String, Double>();
 
     @Override
     public String getCommandName() {
@@ -34,7 +26,6 @@ public class TestBuyCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) throws NumberInvalidException {
         if (!(sender instanceof EntityPlayer)) return;
-
         EntityPlayer player = (EntityPlayer) sender;
 
         if (args.length < 3) {
@@ -44,13 +35,13 @@ public class TestBuyCommand extends CommandBase {
 
         try {
             String itemName = args[0];
-            int amount = parseInt(args[1], 1);        // defaults to 1 if invalid
-            double price = parseDouble(args[2], 0);  // defaults to 0 if invalid
+            int amount = parseInt(args[1], 1);
+            double price = parseDouble(args[2], 0);
 
-            // Store the "purchase price"
-            priceMap.put(itemName, price);
+            // Record purchase
+            EconomyData.recordPurchase(itemName, price);
 
-            // Give the player the item for testing
+            // Give the player the item
             ItemStack stack = new ItemStack(getItemByName(itemName), amount);
             player.inventory.addItemStackToInventory(stack);
 
@@ -63,14 +54,9 @@ public class TestBuyCommand extends CommandBase {
         }
     }
 
-    /**
-     * Maps a string to an Item. Falls back to stone if the item is not found.
-     */
     private Item getItemByName(String name) {
         Item item = Item.getByNameOrId(name);
-        if (item == null) {
-            return Item.getItemFromBlock(Blocks.stone);
-        }
+        if (item == null) return Item.getItemFromBlock(Blocks.stone);
         return item;
     }
 }

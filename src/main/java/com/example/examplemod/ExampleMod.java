@@ -2,6 +2,7 @@ package com.example.examplemod;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.command.ICommand;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
@@ -16,6 +17,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Keyboard;
 import com.example.examplemod.commands.TestBuyCommand;
 import com.example.examplemod.commands.TestSellCommand;
+import com.example.examplemod.commands.TotalProfitCommand;
+import com.example.examplemod.commands.ChatClearCommand;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 
 @Mod(modid = ExampleMod.MODID, name = ExampleMod.NAME, version = ExampleMod.VERSION)
@@ -34,6 +37,8 @@ public class ExampleMod {
     public void serverLoad(FMLServerStartingEvent event) {
         event.registerServerCommand(new TestBuyCommand());
         event.registerServerCommand(new TestSellCommand());
+        event.registerServerCommand((ICommand) new TotalProfitCommand());
+        event.registerServerCommand((ICommand) new ChatClearCommand());
     }
 
     @Mod.EventHandler
