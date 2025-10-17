@@ -1,4 +1,4 @@
-package com.example.examplemod.util;
+package com.example.examplemod.helpers;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
