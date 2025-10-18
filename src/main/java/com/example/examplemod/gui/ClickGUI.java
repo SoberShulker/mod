@@ -1,5 +1,6 @@
 package com.example.examplemod.gui;
 
+import com.example.examplemod.modules.gui.ThemeColor;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.EnumChatFormatting;
@@ -9,6 +10,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Draggable ClickGUI with module toggles, category tabs, and ThemeColor sliders.
+ */
 public class ClickGUI extends GuiScreen {
 
     private int guiX = 50, guiY = 50;
@@ -25,14 +29,14 @@ public class ClickGUI extends GuiScreen {
 
     @Override
     public void initGui() {
-        selectedCategory = defaultCategory; // start with last selected
+        selectedCategory = defaultCategory;
         this.buttonList.clear();
         moduleButtons.clear();
         categoryButtons.clear();
 
         int yOffset = guiY + guiHeight;
 
-        // Create category buttons
+        // Category buttons
         int catX = guiX;
         Category[] categories = Category.values();
         for (int i = 0; i < categories.length; i++) {
@@ -50,14 +54,14 @@ public class ClickGUI extends GuiScreen {
             catX += 65;
         }
 
-        // Create module buttons for selected category
+        // Module buttons
         int modY = yOffset;
         List<Module> modules = ModuleManager.modules;
         for (int i = 0; i < modules.size(); i++) {
             Module m = modules.get(i);
             if (m.getCategory() == selectedCategory) {
                 GuiButton button = new GuiButton(
-                        i,          // button ID
+                        i,
                         guiX,
                         modY,
                         guiWidth,
@@ -70,7 +74,7 @@ public class ClickGUI extends GuiScreen {
             }
         }
 
-        // Add close button
+        // Close button
         GuiButton closeButton = new GuiButton(999, guiX, modY + 5, guiWidth, 20, EnumChatFormatting.RED + "Close");
         this.buttonList.add(closeButton);
     }
@@ -85,7 +89,6 @@ public class ClickGUI extends GuiScreen {
     protected void actionPerformed(GuiButton button) {
         int id = button.id;
 
-        // Module toggle
         if (id >= 0 && id < ModuleManager.modules.size()) {
             Module m = ModuleManager.modules.get(id);
             m.toggle();
@@ -93,40 +96,33 @@ public class ClickGUI extends GuiScreen {
             return;
         }
 
-        // Category buttons
         if (id >= 1000 && id < 2000) {
             selectedCategory = Category.values()[id - 1000];
-            initGui(); // refresh module buttons
+            initGui();
             return;
         }
 
-        // Close button
         if (id == 999) {
-            defaultCategory = selectedCategory; // remember current category
+            defaultCategory = selectedCategory;
             mc.displayGuiScreen(null);
         }
     }
 
     @Override
     public void onGuiClosed() {
-        defaultCategory = selectedCategory; // save last selected category on ESC
+        defaultCategory = selectedCategory;
         super.onGuiClosed();
     }
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        // Get ThemeColor module if enabled
-        Module themeModule = ModuleManager.getModuleByName("ThemeColor");
-        int themeColor = 0x00FF00; // default green
-        if (themeModule != null && themeModule.isEnabled()) {
-            themeColor = themeModule.getColor();
-        }
+        ThemeColor theme = (ThemeColor) ModuleManager.getModuleByName("ThemeColor");
+        int themeColor = 0x00FF00;
+        if (theme != null && theme.isEnabled()) themeColor = theme.getColor();
 
-        // Draw header
         drawRect(guiX, guiY, guiX + guiWidth, guiY + guiHeight, 0xAA000000);
         drawString(mc.fontRendererObj, "ClickGUI - " + selectedCategory.name(), guiX + 5, guiY + 5, themeColor);
 
-        // Draw category tabs with selected highlight
         for (GuiButton b : categoryButtons) {
             boolean selected = (b.id - 1000 == selectedCategory.ordinal());
             int color = selected ? themeColor : 0xFFAAAAAA;
@@ -134,14 +130,17 @@ public class ClickGUI extends GuiScreen {
             drawCenteredString(mc.fontRendererObj, b.displayString, b.xPosition + b.width / 2, b.yPosition + 6, 0xFFFFFFFF);
         }
 
-        // Draw modules and buttons
+        // Draw ThemeColor sliders if GUI category
+        if (selectedCategory == Category.GUI && theme != null && theme.isEnabled()) {
+            theme.drawSliders(mc);
+        }
+
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         super.mouseClicked(mouseX, mouseY, mouseButton);
-        // Start dragging header
         if (mouseX >= guiX && mouseX <= guiX + guiWidth &&
                 mouseY >= guiY && mouseY <= guiY + guiHeight) {
             dragging = true;
@@ -166,7 +165,6 @@ public class ClickGUI extends GuiScreen {
             guiX = mouseX - dragOffsetX;
             guiY = mouseY - dragOffsetY;
 
-            // Update module buttons positions
             int modY = guiY + guiHeight;
             for (GuiButton b : moduleButtons) {
                 b.xPosition = guiX;
@@ -174,15 +172,10 @@ public class ClickGUI extends GuiScreen {
                 modY += 22;
             }
 
-            // Update close button
-            for (GuiButton b : buttonList) {
-                if (b.id == 999) {
-                    b.xPosition = guiX;
-                    b.yPosition = modY + 5;
-                }
+            for (GuiButton guiButton : buttonList) {
+                if (guiButton.id == 999) guiButton.yPosition = modY + 5;
             }
 
-            // Update category buttons
             int catX = guiX;
             for (GuiButton b : categoryButtons) {
                 b.xPosition = catX;
@@ -190,6 +183,11 @@ public class ClickGUI extends GuiScreen {
                 catX += 65;
             }
         }
+
+
+        // Forward mouse input to ThemeColorModule
+        ThemeColor theme = (ThemeColor) ModuleManager.getModuleByName("ThemeColor");
+        if (theme != null && theme.isEnabled()) theme.handleMouseInput();
     }
 
     @Override

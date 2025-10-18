@@ -1,5 +1,7 @@
 package com.example.examplemod.commands;
 
+import com.example.examplemod.helpers.EconomyData;
+import com.example.examplemod.helpers.ItemHelper;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.NumberInvalidException;
@@ -9,8 +11,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.init.Blocks;
 
-import com.example.examplemod.helpers.EconomyData;
-
+/**
+ * Test buy command that tracks price and shows client-sided lore.
+ */
 public class TestBuyCommand extends CommandBase {
 
     @Override
@@ -38,12 +41,15 @@ public class TestBuyCommand extends CommandBase {
             int amount = parseInt(args[1], 1);
             double price = parseDouble(args[2], 0);
 
-            // Record purchase
+            // Record purchase in economy system
             EconomyData.recordPurchase(itemName, price);
 
-            // Give the player the item
-            ItemStack stack = new ItemStack(getItemByName(itemName), amount);
-            player.inventory.addItemStackToInventory(stack);
+            // Create item
+            Item item = getItemByName(itemName);
+            ItemStack stack = new ItemStack(item, amount);
+
+            // Give item and track price (singleplayer or multiplayer)
+            ItemHelper.giveItemWithPrice(player, stack, price);
 
             player.addChatMessage(new ChatComponentText(
                     "Bought " + amount + "x " + itemName + " for " + price

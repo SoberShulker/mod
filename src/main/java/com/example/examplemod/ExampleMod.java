@@ -1,5 +1,6 @@
 package com.example.examplemod;
 
+import com.example.examplemod.helpers.BazaarHelper;
 import com.example.examplemod.commands.ChatClearCommand;
 import com.example.examplemod.commands.TestBuyCommand;
 import com.example.examplemod.commands.TestSellCommand;
@@ -10,8 +11,6 @@ import com.example.examplemod.gui.ModuleManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
@@ -30,13 +29,12 @@ public class ExampleMod {
     public static final String NAME = "Auto Jump Mod";
     public static final String VERSION = "1.0";
 
-    private static final String TAG_TICK_COUNTER = "jumpmod_tick_counter";
-
     @SideOnly(Side.CLIENT)
     private KeyBinding openGuiKey;
 
     @Mod.EventHandler
     public void serverLoad(FMLServerStartingEvent event) {
+
         event.registerServerCommand(new TestBuyCommand());
         event.registerServerCommand(new TestSellCommand());
         event.registerServerCommand(new TotalProfitCommand());
@@ -46,15 +44,12 @@ public class ExampleMod {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new BazaarHelper());
 
-        // Register client-side keybinding
         if (event.getSide() == Side.CLIENT) {
             initClientKeybinds();
-
-
         }
     }
-
 
     @SideOnly(Side.CLIENT)
     private void initClientKeybinds() {
@@ -77,36 +72,13 @@ public class ExampleMod {
         if (!event.player.worldObj.isRemote || event.phase != TickEvent.Phase.END) return;
 
         EntityPlayer player = event.player;
-        Minecraft mc = Minecraft.getMinecraft();
-        boolean isSingleplayer = mc.isSingleplayer();
 
-        // Track ticks in player NBT
-        int ticks = player.getEntityData().getInteger(TAG_TICK_COUNTER);
-        ticks++;
-
-        Module autoJumpModule = ModuleManager.getModuleByName("Auto Jump");
-        if (autoJumpModule != null && autoJumpModule.isEnabled()) {
-            if (isSingleplayer) {
-                // SP: jump every 10 ticks (~0.5s)
-                if (ticks >= 10 && player.onGround) {
-                    player.jump();
-                    player.addChatMessage(new ChatComponentText(
-                            EnumChatFormatting.GREEN + "[SP] You jumped!"
-                    ));
-                    ticks = 0;
-                }
-            } else {
-                // MP: jump every 40 ticks (~2s)
-                if (ticks >= 40 && player.onGround) {
-                    player.jump();
-                    player.addChatMessage(new ChatComponentText(
-                            EnumChatFormatting.AQUA + "[MP] You jumped (multiplayer)!"
-                    ));
-                    ticks = 0;
-                }
+        // Tick all enabled modules
+        for (int i = 0; i < ModuleManager.modules.size(); i++) {
+            Module m = ModuleManager.modules.get(i);
+            if (m.isEnabled()) {
+                m.onTick(player);
             }
         }
-
-        player.getEntityData().setInteger(TAG_TICK_COUNTER, ticks);
     }
 }
