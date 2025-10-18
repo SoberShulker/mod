@@ -1,8 +1,14 @@
 package com.example.examplemod;
 
+import com.example.examplemod.commands.ChatClearCommand;
+import com.example.examplemod.commands.TestBuyCommand;
+import com.example.examplemod.commands.TestSellCommand;
+import com.example.examplemod.commands.TotalProfitCommand;
+import com.example.examplemod.gui.ClickGUI;
+import com.example.examplemod.gui.Module;
+import com.example.examplemod.gui.ModuleManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.command.ICommand;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
@@ -10,16 +16,12 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Keyboard;
-import com.example.examplemod.commands.TestBuyCommand;
-import com.example.examplemod.commands.TestSellCommand;
-import com.example.examplemod.commands.TotalProfitCommand;
-import com.example.examplemod.commands.ChatClearCommand;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 
 @Mod(modid = ExampleMod.MODID, name = ExampleMod.NAME, version = ExampleMod.VERSION)
 public class ExampleMod {
@@ -37,8 +39,8 @@ public class ExampleMod {
     public void serverLoad(FMLServerStartingEvent event) {
         event.registerServerCommand(new TestBuyCommand());
         event.registerServerCommand(new TestSellCommand());
-        event.registerServerCommand((ICommand) new TotalProfitCommand());
-        event.registerServerCommand((ICommand) new ChatClearCommand());
+        event.registerServerCommand(new TotalProfitCommand());
+        event.registerServerCommand(new ChatClearCommand());
     }
 
     @Mod.EventHandler

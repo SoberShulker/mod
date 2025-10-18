@@ -24,7 +24,7 @@ public class TestBuyCommand extends CommandBase {
     }
 
     @Override
-    public void processCommand(ICommandSender sender, String[] args) throws NumberInvalidException {
+    public void processCommand(ICommandSender sender, String[] args) {
         if (!(sender instanceof EntityPlayer)) return;
         EntityPlayer player = (EntityPlayer) sender;
 

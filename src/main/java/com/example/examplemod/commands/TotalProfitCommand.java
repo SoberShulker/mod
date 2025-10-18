@@ -25,16 +25,15 @@ public class TotalProfitCommand extends CommandBase {
 
         double totalProfit = 0.0;
 
-        for (Object keyObj : EconomyData.totalSellMap.keySet()) {
-            String itemName = (String) keyObj;
+        for (String keyObj : EconomyData.totalSellMap.keySet()) {
 
-            Double totalSoldPrice = (Double) EconomyData.totalSellMap.get(itemName);
+            Double totalSoldPrice = EconomyData.totalSellMap.get(keyObj);
             if (totalSoldPrice == null) totalSoldPrice = 0.0;
 
-            Double purchasePricePerUnit = (Double) EconomyData.purchasePriceMap.get(itemName);
+            Double purchasePricePerUnit = EconomyData.purchasePriceMap.get(keyObj);
             if (purchasePricePerUnit == null) purchasePricePerUnit = 0.0;
 
-            Integer amountSold = (Integer) EconomyData.totalSoldAmountMap.get(itemName);
+            Integer amountSold = EconomyData.totalSoldAmountMap.get(keyObj);
             if (amountSold == null) amountSold = 0;
 
             double totalCost = purchasePricePerUnit * amountSold;
@@ -43,7 +42,7 @@ public class TotalProfitCommand extends CommandBase {
             totalProfit += profit;
 
             player.addChatMessage(new ChatComponentText(
-                    itemName + ": Sold " + amountSold + " units, Profit = " + profit
+                    keyObj + ": Sold " + amountSold + " units, Profit = " + profit
             ));
         }
 
