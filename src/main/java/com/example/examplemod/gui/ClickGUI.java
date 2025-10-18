@@ -10,108 +10,100 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Draggable ClickGUI with module toggles, category tabs, and ThemeColor sliders.
- */
 public class ClickGUI extends GuiScreen {
 
     private int guiX = 50, guiY = 50;
-    private final int guiWidth = 120;
+    private final int guiWidth = 140;
     private final int guiHeight = 20;
     private boolean dragging = false;
     private int dragOffsetX, dragOffsetY;
 
-    private Category selectedCategory = Category.BAZAAR;
-    private static Category defaultCategory = Category.BAZAAR;
+    private Category expandedCategory = null;
 
-    private final List<GuiButton> moduleButtons = new ArrayList<GuiButton>();
-    private final List<GuiButton> categoryButtons = new ArrayList<GuiButton>();
+    private final List<ModuleButton> moduleButtons = new ArrayList<ModuleButton>();
+    private final List<CategoryButton> categoryButtons = new ArrayList<CategoryButton>();
 
     @Override
     public void initGui() {
-        selectedCategory = defaultCategory;
         this.buttonList.clear();
         moduleButtons.clear();
         categoryButtons.clear();
-
-        int yOffset = guiY + guiHeight;
 
         // Category buttons
         int catX = guiX;
         Category[] categories = Category.values();
         for (int i = 0; i < categories.length; i++) {
-            Category category = categories[i];
-            GuiButton catButton = new GuiButton(
-                    1000 + i,
-                    catX,
-                    guiY - 25,
-                    60,
-                    20,
-                    category.name()
-            );
+            CategoryButton catButton = new CategoryButton(categories[i], 1000 + i, catX, guiY - 25, 70, 20, categories[i].name());
             categoryButtons.add(catButton);
             this.buttonList.add(catButton);
-            catX += 65;
+            catX += 75;
         }
 
-        // Module buttons
-        int modY = yOffset;
-        List<Module> modules = ModuleManager.modules;
-        for (int i = 0; i < modules.size(); i++) {
-            Module m = modules.get(i);
-            if (m.getCategory() == selectedCategory) {
-                GuiButton button = new GuiButton(
-                        i,
-                        guiX,
-                        modY,
-                        guiWidth,
-                        20,
-                        getButtonText(m)
-                );
-                moduleButtons.add(button);
-                this.buttonList.add(button);
-                modY += 22;
-            }
+        // Module buttons for the expanded category
+        if (expandedCategory != null) {
+            buildModuleButtonsForCategory(expandedCategory);
         }
 
-        // Close button
-        GuiButton closeButton = new GuiButton(999, guiX, modY + 5, guiWidth, 20, EnumChatFormatting.RED + "Close");
+        // Close button (placed below modules or default Y)
+        int closeY = guiY + guiHeight + 150;
+        if (!moduleButtons.isEmpty()) {
+            closeY = (int) moduleButtons.get(moduleButtons.size() - 1).targetY + 22;
+        }
+        GuiButton closeButton = new GuiButton(999, guiX, closeY, guiWidth, 20, EnumChatFormatting.RED + "Close");
         this.buttonList.add(closeButton);
     }
 
+    private void buildModuleButtonsForCategory(Category category) {
+        // Find the category button
+        CategoryButton catButton = null;
+        for (CategoryButton b : categoryButtons) {
+            if (b.category == category) {
+                catButton = b;
+                break;
+            }
+        }
+
+        int modY = (catButton != null) ? catButton.yPosition + catButton.height + 5 : guiY + guiHeight;
+
+        for (Module m : ModuleManager.modules) {
+            if (m.getCategory() != category) continue;
+
+            ModuleButton button = new ModuleButton(m, moduleButtons.size(), guiX, modY, guiWidth, 20, getButtonText(m));
+            button.currentY = modY;
+            button.targetY = modY;
+            moduleButtons.add(button);
+            this.buttonList.add(button);
+
+            modY += 22;
+        }
+    }
+
     private String getButtonText(Module m) {
-        return m.getName() + ": " + (m.isEnabled()
-                ? EnumChatFormatting.GREEN + "ON"
-                : EnumChatFormatting.RED + "OFF");
+        return m.getName();
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        int id = button.id;
-
-        if (id >= 0 && id < ModuleManager.modules.size()) {
-            Module m = ModuleManager.modules.get(id);
+        if (button instanceof ModuleButton) {
+            Module m = ((ModuleButton) button).module;
             m.toggle();
-            button.displayString = getButtonText(m);
             return;
         }
 
-        if (id >= 1000 && id < 2000) {
-            selectedCategory = Category.values()[id - 1000];
+        if (button instanceof CategoryButton) {
+            CategoryButton catButton = (CategoryButton) button;
+            if (expandedCategory == catButton.category) {
+                expandedCategory = null; // collapse
+            } else {
+                expandedCategory = catButton.category; // expand
+            }
             initGui();
             return;
         }
 
-        if (id == 999) {
-            defaultCategory = selectedCategory;
+        if (button.id == 999) {
             mc.displayGuiScreen(null);
         }
-    }
-
-    @Override
-    public void onGuiClosed() {
-        defaultCategory = selectedCategory;
-        super.onGuiClosed();
     }
 
     @Override
@@ -120,19 +112,31 @@ public class ClickGUI extends GuiScreen {
         int themeColor = 0x00FF00;
         if (theme != null && theme.isEnabled()) themeColor = theme.getColor();
 
+        // Draw main header
         drawRect(guiX, guiY, guiX + guiWidth, guiY + guiHeight, 0xAA000000);
-        drawString(mc.fontRendererObj, "ClickGUI - " + selectedCategory.name(), guiX + 5, guiY + 5, themeColor);
+        drawString(mc.fontRendererObj, "ClickGUI", guiX + 5, guiY + 5, themeColor);
 
-        for (GuiButton b : categoryButtons) {
-            boolean selected = (b.id - 1000 == selectedCategory.ordinal());
-            int color = selected ? themeColor : 0xFFAAAAAA;
+        // Draw category buttons
+        for (CategoryButton b : categoryButtons) {
+            boolean isExpanded = b.category == expandedCategory;
+            int color = isExpanded ? themeColor : 0xFFAAAAAA;
             drawRect(b.xPosition, b.yPosition, b.xPosition + b.width, b.yPosition + b.height, color);
             drawCenteredString(mc.fontRendererObj, b.displayString, b.xPosition + b.width / 2, b.yPosition + 6, 0xFFFFFFFF);
         }
 
-        // Draw ThemeColor sliders if GUI category
-        if (selectedCategory == Category.GUI && theme != null && theme.isEnabled()) {
-            theme.drawSliders(mc);
+        // Draw module buttons
+        for (ModuleButton b : moduleButtons) {
+            int leftBarColor = b.module.isEnabled() ? 0xFF00FF00 : 0xFFFF0000;
+            drawRect(b.xPosition, b.yPosition, b.xPosition + 5, b.yPosition + b.height, leftBarColor);
+            drawRect(b.xPosition + 5, b.yPosition, b.xPosition + b.width, b.yPosition + b.height, 0xAA000000);
+            drawString(mc.fontRendererObj, getButtonText(b.module), b.xPosition + 8, b.yPosition + 6, 0xFFFFFFFF);
+        }
+
+        // Draw sliders if GUI category is expanded
+        if (expandedCategory == Category.GUI && theme != null && theme.isEnabled()) {
+            int sliderY = moduleButtons.isEmpty() ? guiY + guiHeight + 5 :
+                    moduleButtons.get(moduleButtons.size() - 1).yPosition + 22;
+            theme.drawSliders(mc, guiX, sliderY);
         }
 
         super.drawScreen(mouseX, mouseY, partialTicks);
@@ -165,27 +169,23 @@ public class ClickGUI extends GuiScreen {
             guiX = mouseX - dragOffsetX;
             guiY = mouseY - dragOffsetY;
 
-            int modY = guiY + guiHeight;
-            for (GuiButton b : moduleButtons) {
-                b.xPosition = guiX;
-                b.yPosition = modY;
-                modY += 22;
-            }
-
-            for (GuiButton guiButton : buttonList) {
-                if (guiButton.id == 999) guiButton.yPosition = modY + 5;
-            }
-
+            // Update category buttons positions
             int catX = guiX;
-            for (GuiButton b : categoryButtons) {
+            for (CategoryButton b : categoryButtons) {
                 b.xPosition = catX;
                 b.yPosition = guiY - 25;
-                catX += 65;
+                catX += 75;
+            }
+
+            // Update module buttons relative to category
+            int modY = guiY + guiHeight;
+            for (ModuleButton b : moduleButtons) {
+                b.xPosition = guiX;
+                b.targetY = modY;
+                modY += 22;
             }
         }
 
-
-        // Forward mouse input to ThemeColorModule
         ThemeColor theme = (ThemeColor) ModuleManager.getModuleByName("ThemeColor");
         if (theme != null && theme.isEnabled()) theme.handleMouseInput();
     }
@@ -193,5 +193,27 @@ public class ClickGUI extends GuiScreen {
     @Override
     public boolean doesGuiPauseGame() {
         return false;
+    }
+
+    private static class ModuleButton extends GuiButton {
+        public final Module module;
+        public float currentY;
+        public float targetY;
+
+        public ModuleButton(Module module, int id, int x, int y, int width, int height, String text) {
+            super(id, x, y, width, height, text);
+            this.module = module;
+            this.currentY = y;
+            this.targetY = y;
+        }
+    }
+
+    private static class CategoryButton extends GuiButton {
+        public final Category category;
+
+        public CategoryButton(Category category, int id, int x, int y, int width, int height, String text) {
+            super(id, x, y, width, height, text);
+            this.category = category;
+        }
     }
 }

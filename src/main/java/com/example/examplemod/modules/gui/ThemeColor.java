@@ -1,111 +1,114 @@
 package com.example.examplemod.modules.gui;
 
 import com.example.examplemod.gui.Module;
-import com.example.examplemod.gui.Category;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.entity.player.EntityPlayer;
-import org.lwjgl.input.Mouse;
+import com.example.examplemod.gui.Category;
 
-/**
- * Module to control the color theme of the client.
- * Provides full RGB sliders that affect all GUI elements.
- */
+import java.awt.Color;
+
 public class ThemeColor extends Module {
 
-    private int red = 0;
-    private int green = 255;
-    private int blue = 0;
+    private int red = 0, green = 255, blue = 0;
 
-    private boolean draggingRed = false;
-    private boolean draggingGreen = false;
-    private boolean draggingBlue = false;
-
-    private int sliderWidth = 100;
-    private int sliderHeight = 10;
-    private int sliderX = 50;
-    private int sliderY = 80;
+    private final Slider redSlider = new Slider("R", 0, 255);
+    private final Slider greenSlider = new Slider("G", 0, 255);
+    private final Slider blueSlider = new Slider("B", 0, 255);
 
     public ThemeColor() {
         super("ThemeColor", true, Category.GUI);
     }
 
-    @Override
-    public int getColor() {
-        // Return combined ARGB value
-        return (255 << 24) | (red << 16) | (green << 8) | blue;
-    }
-
-    public int getRed() { return red; }
-    public int getGreen() { return green; }
-    public int getBlue() { return blue; }
-
-    public void setRed(int r) { red = clamp(r); }
-    public void setGreen(int g) { green = clamp(g); }
-    public void setBlue(int b) { blue = clamp(b); }
-
-    private int clamp(int val) {
-        return Math.max(0, Math.min(255, val));
-    }
-
-    @Override
-    public void onTick(EntityPlayer player) {
-        // ThemeColorModule doesn't do automatic ticking
-    }
-
     /**
-     * Draw RGB sliders for the module.
-     * Call this in ClickGUI.drawScreen()
+     * Returns the combined RGB color.
      */
-    public void drawSliders(Minecraft mc) {
-        // Red slider
-        Gui.drawRect(sliderX, sliderY, sliderX + sliderWidth, sliderY + sliderHeight, 0xFFFF0000);
-        int redKnobX = sliderX + red * sliderWidth / 255;
-        Gui.drawRect(redKnobX - 2, sliderY - 2, redKnobX + 2, sliderY + sliderHeight + 2, 0xFFFFFFFF);
-
-        // Green slider
-        int greenY = sliderY + 15;
-        Gui.drawRect(sliderX, greenY, sliderX + sliderWidth, greenY + sliderHeight, 0xFF00FF00);
-        int greenKnobX = sliderX + green * sliderWidth / 255;
-        Gui.drawRect(greenKnobX - 2, greenY - 2, greenKnobX + 2, greenY + sliderHeight + 2, 0xFFFFFFFF);
-
-        // Blue slider
-        int blueY = sliderY + 30;
-        Gui.drawRect(sliderX, blueY, sliderX + sliderWidth, blueY + sliderHeight, 0xFF0000FF);
-        int blueKnobX = sliderX + blue * sliderWidth / 255;
-        Gui.drawRect(blueKnobX - 2, blueY - 2, blueKnobX + 2, blueY + sliderHeight + 2, 0xFFFFFFFF);
+    public int getColor() {
+        return new Color(red, green, blue).getRGB();
     }
 
     /**
-     * Handle mouse input for the sliders.
-     * Call this in ClickGUI.handleMouseInput()
+     * Draw sliders at dynamic X, Y positions.
+     */
+    public void drawSliders(Minecraft mc, int x, int startY) {
+        int sliderY = startY;
+        redSlider.draw(mc, x, sliderY);
+        sliderY += 15;
+        greenSlider.draw(mc, x, sliderY);
+        sliderY += 15;
+        blueSlider.draw(mc, x, sliderY);
+
+        // Update values from sliders
+        red = redSlider.getValue();
+        green = greenSlider.getValue();
+        blue = blueSlider.getValue();
+    }
+
+    /**
+     * Handle mouse input for all sliders.
      */
     public void handleMouseInput() {
-        Minecraft mc = Minecraft.getMinecraft();
-        int mouseX = Mouse.getEventX() * mc.displayWidth / mc.currentScreen.width;
-        int mouseY = mc.currentScreen.height - Mouse.getEventY() * mc.currentScreen.height / mc.displayHeight - 1;
-
-        boolean leftPressed = Mouse.isButtonDown(0);
-
-        int redY = sliderY;
-        int greenY = sliderY + 15;
-        int blueY = sliderY + 30;
-
-        if (leftPressed) {
-            if (isMouseOver(mouseX, mouseY, sliderX, redY, sliderWidth, sliderHeight)) draggingRed = true;
-            if (isMouseOver(mouseX, mouseY, sliderX, greenY, sliderWidth, sliderHeight)) draggingGreen = true;
-            if (isMouseOver(mouseX, mouseY, sliderX, blueY, sliderWidth, sliderHeight)) draggingBlue = true;
-        } else {
-            draggingRed = draggingGreen = draggingBlue = false;
-        }
-
-        // Update values based on mouse drag
-        if (draggingRed) red = clamp((mouseX - sliderX) * 255 / sliderWidth);
-        if (draggingGreen) green = clamp((mouseX - sliderX) * 255 / sliderWidth);
-        if (draggingBlue) blue = clamp((mouseX - sliderX) * 255 / sliderWidth);
+        redSlider.handleMouseInput();
+        greenSlider.handleMouseInput();
+        blueSlider.handleMouseInput();
     }
 
-    private boolean isMouseOver(int mx, int my, int x, int y, int width, int height) {
-        return mx >= x && mx <= x + width && my >= y && my <= y + height;
+    // --- Slider inner class ---
+    private static class Slider {
+        private final String label;
+        private int value;
+        private final int min, max;
+        private boolean dragging = false;
+        private int x;
+        private int y;
+        private final int width = 120;
+        private final int height = 10;
+
+        public Slider(String label, int min, int max) {
+            this.label = label;
+            this.min = min;
+            this.max = max;
+            this.value = min;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public void draw(Minecraft mc, int x, int y) {
+            this.x = x;
+            this.y = y;
+
+            // Background bar
+            Gui.drawRect(x, y, x + width, y + height, 0xAA000000);
+
+            // Filled portion
+            int filledWidth = (int) ((value - min) / (float) (max - min) * width);
+            Gui.drawRect(x, y, x + filledWidth, y + height, 0xFFFF0000);
+
+            // Draw label and value
+            mc.fontRendererObj.drawString(label + ": " + value, x, y - 10, 0xFFFFFFFF);
+        }
+
+        public void handleMouseInput() {
+            if (dragging) {
+                int mouseX = org.lwjgl.input.Mouse.getX() * width / Minecraft.getMinecraft().displayWidth;
+                int newValue = (int) ((mouseX - x) / (float) width * (max - min) + min);
+                if (newValue < min) newValue = min;
+                if (newValue > max) newValue = max;
+                value = newValue;
+
+                // Stop dragging if mouse button released
+                if (!org.lwjgl.input.Mouse.isButtonDown(0)) {
+                    dragging = false;
+                }
+            }
+
+            // Start dragging if hovering and left-click
+            int mouseX = org.lwjgl.input.Mouse.getX() * width / Minecraft.getMinecraft().displayWidth;
+            int mouseY = Minecraft.getMinecraft().displayHeight - org.lwjgl.input.Mouse.getY() * Minecraft.getMinecraft().displayHeight / Minecraft.getMinecraft().displayHeight - 1;
+            if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height && org.lwjgl.input.Mouse.isButtonDown(0)) {
+                dragging = true;
+            }
+        }
     }
 }

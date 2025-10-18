@@ -1,19 +1,15 @@
 package com.example.examplemod.commands;
 
-import com.example.examplemod.helpers.EconomyData;
-import com.example.examplemod.helpers.ItemHelper;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
-import net.minecraft.init.Blocks;
 
-/**
- * Test buy command that tracks price and shows client-sided lore.
- */
+import com.example.examplemod.helpers.EconomyData;
+import com.example.examplemod.helpers.ItemHelper;
+import com.example.examplemod.helpers.TestCommandHelper;
+
 public class TestBuyCommand extends CommandBase {
 
     @Override
@@ -36,33 +32,25 @@ public class TestBuyCommand extends CommandBase {
             return;
         }
 
-        try {
-            String itemName = args[0];
-            int amount = parseInt(args[1], 1);
-            double price = parseDouble(args[2], 0);
+        String itemName = args[0];
+        int amount = TestCommandHelper.parseIntSafe(args[1], 1);
+        double price = TestCommandHelper.parseDoubleSafe(args[2], 0);
 
-            // Record purchase in economy system
-            EconomyData.recordPurchase(itemName, price);
+        // Record purchase correctly
+        EconomyData.recordPurchase(itemName, amount, price);
 
-            // Create item
-            Item item = getItemByName(itemName);
-            ItemStack stack = new ItemStack(item, amount);
-
-            // Give item and track price (singleplayer or multiplayer)
+        // Only give test items in singleplayer
+        if (TestCommandHelper.isSingleplayer(player)) {
+            ItemStack stack = new ItemStack(TestCommandHelper.getItemByName(itemName), amount);
             ItemHelper.giveItemWithPrice(player, stack, price);
 
             player.addChatMessage(new ChatComponentText(
-                    "Bought " + amount + "x " + itemName + " for " + price
+                    "§aBought " + amount + "x " + itemName + " for " + (price * amount)
             ));
-
-        } catch (NumberInvalidException e) {
-            player.addChatMessage(new ChatComponentText("Invalid number: " + e.getMessage()));
+        } else {
+            player.addChatMessage(new ChatComponentText(
+                    "§aRecorded purchase of " + amount + "x " + itemName + " for " + (price * amount)
+            ));
         }
-    }
-
-    private Item getItemByName(String name) {
-        Item item = Item.getByNameOrId(name);
-        if (item == null) return Item.getItemFromBlock(Blocks.stone);
-        return item;
     }
 }

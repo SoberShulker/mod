@@ -14,12 +14,11 @@ import java.util.Map;
  */
 public class ItemHelper {
 
-    // Map to track purchases in multiplayer (client-side only)
+    // Map to track purchases in multiplayer
     public static final Map<String, Double> lastPurchasePrices = new HashMap<String, Double>();
 
-    /**
-     * Adds a single line of lore to the given ItemStack (singleplayer-safe).
-     */
+
+     // Adds a single line of lore to the given ItemStack
     public static void addLore(ItemStack stack, String line) {
         if (stack == null) return;
 

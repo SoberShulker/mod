@@ -5,9 +5,6 @@ import com.example.examplemod.modules.gui.ThemeColor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Manages all modules in the client.
- */
 public class ModuleManager {
 
     // List of all modules
@@ -25,9 +22,6 @@ public class ModuleManager {
         modules.add(new Module("AUCTION", true, Category.AUCTION));
     }
 
-    /**
-     * Get a module by name
-     */
     public static Module getModuleByName(String name) {
         for (Module m : modules) {
             if (m.getName().equalsIgnoreCase(name)) return m;

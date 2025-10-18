@@ -1,15 +1,12 @@
 package com.example.examplemod.commands;
 
+import com.example.examplemod.helpers.EconomyData;
+import com.example.examplemod.helpers.TestCommandHelper;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
-import net.minecraft.init.Blocks;
-
-import com.example.examplemod.helpers.EconomyData;
 
 public class TestSellCommand extends CommandBase {
 
@@ -20,7 +17,7 @@ public class TestSellCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/testsell <item> <amount> <sellPrice> [perItem=false]";
+        return "/testsell <item> <amount> <price>";
     }
 
     @Override
@@ -28,63 +25,55 @@ public class TestSellCommand extends CommandBase {
         if (!(sender instanceof EntityPlayer)) return;
         EntityPlayer player = (EntityPlayer) sender;
 
+        if (!TestCommandHelper.isSingleplayer(player)) return;
+
         if (args.length < 3) {
-            player.addChatMessage(new ChatComponentText("Usage: /testsell <item> <amount> <sellPrice> [perItem=false]"));
+            player.addChatMessage(new ChatComponentText("Usage: /testsell <item> <amount> <price>"));
             return;
         }
 
-        try {
-            String itemName = args[0];
-            int amount = parseInt(args[1], 1);
-            double sellPriceInput = parseDouble(args[2], 0);
+        String itemName = args[0];
+        int requestedAmount = TestCommandHelper.parseIntSafe(args[1], 1);
+        double price = TestCommandHelper.parseDoubleSafe(args[2], 0);
+        ItemStack itemToSell = new ItemStack(TestCommandHelper.getItemByName(itemName));
 
-            boolean perItem = false;
-            if (args.length >= 4) {
-                perItem = Boolean.parseBoolean(args[3]);
+        // Count total available items
+        int totalAvailable = 0;
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (stack != null && stack.getItem() == itemToSell.getItem()) {
+                totalAvailable += stack.stackSize;
             }
-
-            // Calculate total sell price
-            double totalSellPrice = perItem ? sellPriceInput * amount : sellPriceInput;
-
-            // Remove items from inventory
-            Item sellItem = getItemByName(itemName);
-            int removed = removeItemsFromInventory(player, sellItem, amount);
-
-            // Record sale
-            EconomyData.recordSale(itemName, removed, totalSellPrice);
-
-            // Feedback
-            String soldMsg = "Sold " + removed + "x " + itemName;
-            if (perItem) soldMsg += " at " + sellPriceInput + " each";
-            soldMsg += " for total " + totalSellPrice;
-            player.addChatMessage(new ChatComponentText(soldMsg));
-
-        } catch (NumberInvalidException e) {
-            player.addChatMessage(new ChatComponentText("Invalid number: " + e.getMessage()));
         }
-    }
 
-    private Item getItemByName(String name) {
-        Item item = Item.getByNameOrId(name);
-        if (item == null) return Item.getItemFromBlock(Blocks.stone);
-        return item;
-    }
+        if (totalAvailable == 0) {
+            player.addChatMessage(new ChatComponentText("§cYou do not have any " + itemName + " to sell."));
+            return;
+        }
 
-    private int removeItemsFromInventory(EntityPlayer player, Item item, int amount) {
-        int removed = 0;
-        for (int i = 0; i < player.inventory.mainInventory.length; i++) {
+        // Limit amount to total available
+        int amountToSell = Math.min(requestedAmount, totalAvailable);
+
+        int removedCount = 0;
+        for (int i = 0; i < player.inventory.mainInventory.length && removedCount < amountToSell; i++) {
             ItemStack stack = player.inventory.mainInventory[i];
-            if (stack != null && stack.getItem() == item) {
-                if (stack.stackSize <= (amount - removed)) {
-                    removed += stack.stackSize;
-                    player.inventory.mainInventory[i] = null;
-                } else {
-                    stack.stackSize -= (amount - removed);
-                    removed = amount;
-                }
-                if (removed >= amount) break;
+            if (stack == null || stack.getItem() != itemToSell.getItem()) continue;
+
+            int stackSize = stack.stackSize;
+            int needed = amountToSell - removedCount;
+
+            if (stackSize <= needed) {
+                removedCount += stackSize;
+                player.inventory.mainInventory[i] = null;
+            } else {
+                stack.stackSize -= needed;
+                removedCount += needed;
             }
         }
-        return removed;
+
+        EconomyData.recordSale(itemName, removedCount, price);
+
+        player.addChatMessage(new ChatComponentText(
+                "§aSold " + removedCount + "x " + itemName + " for " + (price * removedCount)
+        ));
     }
 }
