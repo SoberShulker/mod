@@ -34,22 +34,25 @@ public class TestBuyCommand extends CommandBase {
 
         String itemName = args[0];
         int amount = TestCommandHelper.parseIntSafe(args[1], 1);
-        double price = TestCommandHelper.parseDoubleSafe(args[2], 0);
+        double pricePerItem = TestCommandHelper.parseDoubleSafe(args[2], 0);
+        double totalPrice = pricePerItem * amount;
 
-        // Record purchase correctly
-        EconomyData.recordPurchase(itemName, amount, price);
+        // Record purchase
+        EconomyData.recordPurchase(itemName, amount, pricePerItem);
 
-        // Only give test items in singleplayer
         if (TestCommandHelper.isSingleplayer(player)) {
             ItemStack stack = new ItemStack(TestCommandHelper.getItemByName(itemName), amount);
-            ItemHelper.giveItemWithPrice(player, stack, price);
+
+            // Call new method (4 args) for dual-line lore
+            ItemHelper.giveItemWithPrice(player, stack, pricePerItem, amount);
 
             player.addChatMessage(new ChatComponentText(
-                    "§aBought " + amount + "x " + itemName + " for " + (price * amount)
+                    "§aBought " + amount + "x " + itemName + " for " + totalPrice
             ));
         } else {
+            // Multiplayer: only record purchase
             player.addChatMessage(new ChatComponentText(
-                    "§aRecorded purchase of " + amount + "x " + itemName + " for " + (price * amount)
+                    "§aRecorded purchase of " + amount + "x " + itemName + " for " + totalPrice
             ));
         }
     }
