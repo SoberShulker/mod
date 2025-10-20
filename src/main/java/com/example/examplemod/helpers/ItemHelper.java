@@ -3,27 +3,26 @@ package com.example.examplemod.helpers;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagString;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
- * Handles item lore, price tracking, and Hypixel-style item retrieval.
- * Java 6 / Forge 1.8 compatible.
+ * Handles item lore, price tracking, and Hypixel-style item lookup.
+ * Fully Forge 1.8 + Java 6 compatible.
  */
 public class ItemHelper {
 
-    // Track last purchase prices
     public static final Map<String, Double> lastPurchasePrices = new HashMap<String, Double>();
-
-    // Caches for fast lookup
     private static final Map<String, Item> plainCache = new HashMap<String, Item>();
     private static final Map<String, Item> enchantedCache = new HashMap<String, Item>();
     private static boolean cacheInitialized = false;
 
-    /** Adds a line of lore to an ItemStack */
+    /** Force-correct lore injection (1.8 safe) */
     public static void addLore(ItemStack stack, String line) {
         if (stack == null) return;
 
@@ -33,27 +32,31 @@ public class ItemHelper {
             stack.setTagCompound(tag);
         }
 
-        NBTTagCompound display = tag.getCompoundTag("display");
-        if (display == null) {
+        NBTTagCompound display;
+        if (tag.hasKey("display", 10)) {
+            display = tag.getCompoundTag("display");
+        } else {
             display = new NBTTagCompound();
             tag.setTag("display", display);
         }
 
-        NBTTagList loreList = display.getTagList("Lore", 8);
-        if (loreList == null) {
+        NBTTagList loreList;
+        if (display.hasKey("Lore", 9)) {
+            loreList = display.getTagList("Lore", 8);
+        } else {
             loreList = new NBTTagList();
         }
 
         loreList.appendTag(new NBTTagString(line));
         display.setTag("Lore", loreList);
+        stack.setTagCompound(tag);
     }
 
-    /** Give a player an item with price lore */
+    /** Give a player an item with lore & tracked price */
     public static void giveItemWithPrice(EntityPlayer player, ItemStack stack, double price) {
         giveItemWithPrice(player, stack, price, stack.stackSize);
     }
 
-    /** Overload: specify amount */
     public static void giveItemWithPrice(EntityPlayer player, ItemStack stack, double price, int amount) {
         if (stack == null || player == null || amount <= 0) return;
 
@@ -61,15 +64,16 @@ public class ItemHelper {
         copy.stackSize = amount;
 
         lastPurchasePrices.put(copy.getDisplayName(), price);
-
         addLore(copy, "§aPaid: " + String.format("%,.2f", price) + " coins each");
 
         if (!player.inventory.addItemStackToInventory(copy)) {
             player.dropPlayerItemWithRandomChoice(copy, false);
         }
+        player.inventory.markDirty();
+        player.openContainer.detectAndSendChanges();
     }
 
-    /** Get an Item by Hypixel-style name, handles normal and enchanted separately */
+    /** Get an item by Hypixel-style name */
     public static Item getItemByName(String name) {
         if (name == null) return null;
         initializeCache();
@@ -82,22 +86,19 @@ public class ItemHelper {
             cleaned = cleaned.replace("enchanted ", "").trim();
         }
 
-        Map<String, Item> map = enchanted ? enchantedCache : plainCache;
-        if (map.containsKey(cleaned)) return map.get(cleaned);
+        Map map = enchanted ? enchantedCache : plainCache;
+        if (map.containsKey(cleaned)) return (Item) map.get(cleaned);
 
-        // fallback: try registry name
-        Item item = Item.getByNameOrId(name);
-        if (item != null) return item;
-
-        return null;
+        Item fallback = Item.getByNameOrId(name);
+        return fallback;
     }
 
-    /** Builds the cache once */
+    /** Build cache once */
     private static void initializeCache() {
         if (cacheInitialized) return;
 
-        for (Iterator iterator = Item.itemRegistry.iterator(); iterator.hasNext();) {
-            Object obj = iterator.next();
+        for (Iterator it = Item.itemRegistry.iterator(); it.hasNext();) {
+            Object obj = it.next();
             if (!(obj instanceof Item)) continue;
             Item i = (Item) obj;
             if (i == null) continue;
@@ -107,7 +108,7 @@ public class ItemHelper {
             boolean isEnchanted = display.startsWith("enchanted ");
             if (isEnchanted) display = display.replace("enchanted ", "").trim();
 
-            Map<String, Item> map = isEnchanted ? enchantedCache : plainCache;
+            Map map = isEnchanted ? enchantedCache : plainCache;
             map.put(display, i);
         }
 

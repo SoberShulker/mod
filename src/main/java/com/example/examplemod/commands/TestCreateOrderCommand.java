@@ -8,14 +8,14 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
-public class TestSellCommand extends CommandBase {
+public class TestCreateOrderCommand extends CommandBase {
 
     public String getCommandName() {
-        return "testsell";
+        return "testcreateorder";
     }
 
     public String getCommandUsage(ICommandSender sender) {
-        return "/testsell <item> <amount> <price>";
+        return "/testcreateorder <item> <amount> <price>";
     }
 
     public void processCommand(ICommandSender sender, String[] args) {
@@ -23,7 +23,7 @@ public class TestSellCommand extends CommandBase {
         EntityPlayer player = (EntityPlayer) sender;
 
         if (args.length < 3) {
-            player.addChatMessage(new ChatComponentText("Usage: /testsell <item> <amount> <price>"));
+            player.addChatMessage(new ChatComponentText("Usage: /testcreateorder <item> <amount> <price>"));
             return;
         }
 
@@ -31,15 +31,15 @@ public class TestSellCommand extends CommandBase {
         int amount = TestCommandHelper.parseIntSafe(args[1], 1);
         double price = TestCommandHelper.parseDoubleSafe(args[2], 0);
 
-        // Exact Bazaar sell message
-        final String bazaarText = String.format("[Bazaar] Sold %d %s for %,.2f coins!", amount, itemName, price * amount);
+        // Bazaar buy order setup message
+        final String bazaarText = String.format("[Bazaar] Buy Order Setup! %d %s for %,.2f coins!", amount, itemName, price * amount);
 
         ClientChatReceivedEvent fakeEvent = new ClientChatReceivedEvent((byte)0, new ChatComponentText(bazaarText));
         BazaarChatListener listener = new BazaarChatListener();
         listener.onChatReceived(fakeEvent);
 
         player.addChatMessage(new ChatComponentText(
-                "§aRecorded sale of " + amount + "x " + itemName + " for " + String.format("%,.2f", price * amount)
+                "§aCreated fake buy order: " + amount + "x " + itemName + " for " + String.format("%,.2f", price * amount)
         ));
     }
 }

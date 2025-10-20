@@ -42,6 +42,9 @@ public class ExampleMod {
         event.registerServerCommand(new TestBazaarMsgCommand());
         event.registerServerCommand(new TestClaimOrderCommand());
         event.registerServerCommand(new ToggleBazaarDebugCommand());
+        event.registerServerCommand(new TestCreateOrderCommand());
+        event.registerServerCommand(new TestClaimOrderCommand());
+        event.registerServerCommand(new ListFakeOrdersCommand());
     }
 
     @Mod.EventHandler

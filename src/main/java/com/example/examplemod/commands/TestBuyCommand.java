@@ -6,7 +6,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 
-import com.example.examplemod.helpers.EconomyData;
 import com.example.examplemod.helpers.ItemHelper;
 import com.example.examplemod.helpers.TestCommandHelper;
 
@@ -34,26 +33,29 @@ public class TestBuyCommand extends CommandBase {
 
         String itemName = args[0];
         int amount = TestCommandHelper.parseIntSafe(args[1], 1);
-        double pricePerItem = TestCommandHelper.parseDoubleSafe(args[2], 0);
-        double totalPrice = pricePerItem * amount;
+        double price = TestCommandHelper.parseDoubleSafe(args[2], 0);
 
-        // Record purchase
-        EconomyData.recordPurchase(itemName, amount, pricePerItem);
+        // Total cost
+        double totalCost = price * amount;
 
+        // Format total for Hypixel-style chat (commas and dot)
+        String formattedTotal = String.format("%,.2f", totalCost);
+
+        // Generate the Hypixel-style Bazaar message
+        String bazaarMsg = "[Bazaar] Bought " + amount + " " + itemName + " for " + formattedTotal + " coins!";
+
+        // Send message so BazaarChatListener picks it up
+        player.addChatMessage(new ChatComponentText(bazaarMsg));
+
+        // Give item only in singleplayer
         if (TestCommandHelper.isSingleplayer(player)) {
             ItemStack stack = new ItemStack(TestCommandHelper.getItemByName(itemName), amount);
+            ItemHelper.giveItemWithPrice(player, stack, price);
 
-            // Call new method (4 args) for dual-line lore
-            ItemHelper.giveItemWithPrice(player, stack, pricePerItem, amount);
-
-            player.addChatMessage(new ChatComponentText(
-                    "§aBought " + amount + "x " + itemName + " for " + totalPrice
-            ));
-        } else {
-            // Multiplayer: only record purchase
-            player.addChatMessage(new ChatComponentText(
-                    "§aRecorded purchase of " + amount + "x " + itemName + " for " + totalPrice
-            ));
+            // Also add lore to reflect total purchase
+            ItemHelper.addLore(stack, "§aBought via TESTBUY");
+            ItemHelper.addLore(stack, "§aPaid: " + String.format("%,.2f", price) + " coins each");
+            ItemHelper.addLore(stack, "§7Stack total: " + formattedTotal + " coins");
         }
     }
 }

@@ -1,9 +1,9 @@
 package com.example.examplemod.listeners;
 
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import com.example.examplemod.helpers.BazaarDebugManager;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraft.util.IChatComponent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -11,14 +11,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.example.examplemod.helpers.BazaarDebugManager;
-
 public class BazaarChatListener {
 
     public static boolean bazaarMenuOpen = false;
-
     public static final List<BazaarPurchase> recentPurchases = new ArrayList<BazaarPurchase>();
 
+    // Regex patterns matching exact Bazaar syntax
     private static final Pattern BUY_PATTERN =
             Pattern.compile("\\[Bazaar\\] Bought (\\d+) (.+) for ([\\d.,]+) coins!");
     private static final Pattern SELL_PATTERN =
@@ -28,14 +26,18 @@ public class BazaarChatListener {
     private static final Pattern SELL_OFFER_PATTERN =
             Pattern.compile("\\[Bazaar\\] Sell Offer Setup! (\\d+) (.+) for ([\\d.,]+) coins\\.");
     private static final Pattern CLAIM_ORDER_PATTERN =
-            Pattern.compile("\\[Bazaar\\] Claimed (\\d+) (.+) from a Buy Order!");
+            Pattern.compile("\\[Bazaar\\] Claimed (\\d+) (.+) worth ([\\d.,]+) bought for ([\\d.,]+) each!");
+    private static final Pattern CLAIM_SELL_PATTERN =
+            Pattern.compile("\\[Bazaar\\] Claimed ([\\d.,]+) from selling (\\d+) (.+) at ([\\d.,]+) each!");
 
     @SubscribeEvent
     public void onChatReceived(ClientChatReceivedEvent event) {
         if (event == null || event.message == null) return;
-        String text = event.message.getUnformattedText();
 
+        // Forge 1.8: access the public field directly
+        String text = event.message.getUnformattedText();
         Matcher m;
+
         try {
             if ((m = BUY_PATTERN.matcher(text)).matches()) {
                 recordPurchase(m.group(2), Integer.parseInt(m.group(1)), parseCoins(m.group(3)), "BUY");
@@ -46,7 +48,9 @@ public class BazaarChatListener {
             } else if ((m = SELL_OFFER_PATTERN.matcher(text)).matches()) {
                 recordPurchase(m.group(2), Integer.parseInt(m.group(1)), parseCoins(m.group(3)), "SELL_OFFER");
             } else if ((m = CLAIM_ORDER_PATTERN.matcher(text)).matches()) {
-                recordPurchase(m.group(2), Integer.parseInt(m.group(1)), 0, "CLAIMED_ORDER");
+                recordPurchase(m.group(2), Integer.parseInt(m.group(1)), parseCoins(m.group(3)), "CLAIMED_ORDER");
+            } else if ((m = CLAIM_SELL_PATTERN.matcher(text)).matches()) {
+                recordPurchase(m.group(3), Integer.parseInt(m.group(2)), parseCoins(m.group(1)), "CLAIMED_SELL");
             }
         } catch (Exception e) {
             BazaarDebugManager.sendCritical("Error parsing Bazaar message: " + text);
@@ -61,16 +65,20 @@ public class BazaarChatListener {
 
     private void recordPurchase(String itemName, int amount, double totalCoins, String type) {
         double perItem = (amount > 0 && totalCoins > 0) ? (totalCoins / amount) : 0;
-        BazaarPurchase p = new BazaarPurchase(itemName, amount, perItem, type, System.currentTimeMillis());
-        recentPurchases.add(p);
+        BazaarPurchase p = new BazaarPurchase(itemName, amount, perItem, type, totalCoins, System.currentTimeMillis());
 
-        // Clean old
-        for (Iterator<BazaarPurchase> it = recentPurchases.iterator(); it.hasNext();) {
-            BazaarPurchase old = it.next();
-            if (System.currentTimeMillis() - old.timestamp > 15000L) it.remove();
+        // Only track in debug mode for multiplayer or if relevant
+        if (BazaarDebugManager.isDebugEnabled() || type.startsWith("BUY") || type.startsWith("CLAIMED")) {
+            recentPurchases.add(p);
+
+            // Remove purchases older than 15 seconds
+            for (Iterator<BazaarPurchase> it = recentPurchases.iterator(); it.hasNext();) {
+                BazaarPurchase old = it.next();
+                if (System.currentTimeMillis() - old.timestamp > 15000L) it.remove();
+            }
         }
 
-        BazaarDebugManager.sendDebug("Recorded " + type + ": " + amount + "x " + itemName + " @" + perItem);
+        BazaarDebugManager.sendDebug("Recorded " + type + ": " + amount + "x " + itemName + " @ " + perItem);
     }
 
     public static double parseCoins(String s) {
@@ -83,18 +91,25 @@ public class BazaarChatListener {
     }
 
     public static class BazaarPurchase {
-        public final String itemName;
+        public String itemName;
         public int remaining;
-        public final double perItem;
-        public final String type;
-        public final long timestamp;
+        public double perItem;
+        public String type;
+        public long timestamp;
+        public double price;
 
-        public BazaarPurchase(String itemName, int amount, double perItem, String type, long timestamp) {
+        public BazaarPurchase(String itemName, int remaining, double perItem, String type, double price, long timestamp) {
             this.itemName = itemName;
-            this.remaining = amount;
+            this.remaining = remaining;
             this.perItem = perItem;
             this.type = type;
+            this.price = price;
             this.timestamp = timestamp;
+        }
+
+        // Convenience constructor
+        public BazaarPurchase(String itemName, int remaining, double perItem, String type, long timestamp) {
+            this(itemName, remaining, perItem, type, remaining * perItem, timestamp);
         }
     }
 }

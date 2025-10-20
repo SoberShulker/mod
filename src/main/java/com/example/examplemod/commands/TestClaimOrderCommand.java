@@ -1,66 +1,57 @@
 package com.example.examplemod.commands;
 
+import com.example.examplemod.helpers.ItemHelper;
+import com.example.examplemod.helpers.TestCommandHelper;
+import com.example.examplemod.listeners.BazaarChatListener;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
-
-import com.example.examplemod.helpers.ItemHelper;
-import com.example.examplemod.helpers.BazaarDebugManager;
-import com.example.examplemod.listeners.BazaarChatListener;
-
-import java.util.Iterator;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
 public class TestClaimOrderCommand extends CommandBase {
 
-    @Override
     public String getCommandName() {
         return "testclaimorder";
     }
 
-    @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/testclaimorder <item>";
+        return "/testclaimorder <item> <amount> <price>";
     }
 
-    @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (!(sender instanceof EntityPlayer)) return;
         EntityPlayer player = (EntityPlayer) sender;
 
-        if (args.length < 1) {
-            player.addChatMessage(new ChatComponentText(getCommandUsage(sender)));
+        if (args.length < 3) {
+            player.addChatMessage(new ChatComponentText("Usage: /testclaimorder <item> <amount> <price>"));
             return;
         }
 
         String itemName = args[0];
-        boolean claimedAny = false;
+        int amount = TestCommandHelper.parseIntSafe(args[1], 1);
+        double price = TestCommandHelper.parseDoubleSafe(args[2], 0);
 
-        for (Iterator it = BazaarChatListener.recentPurchases.iterator(); it.hasNext();) {
-            BazaarChatListener.BazaarPurchase purchase = (BazaarChatListener.BazaarPurchase) it.next();
+        // Bazaar claimed buy order message
+        final String bazaarText = String.format("[Bazaar] Claimed %d %s worth %,.2f bought for %,.2f each!", amount, itemName, price * amount, price);
 
-            if (!purchase.itemName.equalsIgnoreCase(itemName)) continue;
-            if (!purchase.type.equals("BUY_ORDER") && !purchase.type.equals("CLAIMED_ORDER")) continue;
+        ClientChatReceivedEvent fakeEvent = new ClientChatReceivedEvent((byte)0, new ChatComponentText(bazaarText));
+        BazaarChatListener listener = new BazaarChatListener();
+        listener.onChatReceived(fakeEvent);
 
-            // Give item to player
-            ItemStack stack = new ItemStack(ItemHelper.getItemByName(itemName));
-            int amt = purchase.remaining;
-            stack.stackSize = amt;
-            ItemHelper.addLore(stack, "§aClaimed from BUY_ORDER");
-            ItemHelper.addLore(stack, "§aPaid: " + String.format("%,.2f", purchase.perItem) + " coins each");
+        // Only give items in singleplayer
+        if (TestCommandHelper.isSingleplayer(player)) {
+            ItemStack stack = new ItemStack(TestCommandHelper.getItemByName(itemName), amount);
+            ItemHelper.giveItemWithPrice(player, stack, price);
 
-            player.inventory.addItemStackToInventory(stack);
-
-            BazaarDebugManager.sendDebug("Claimed " + amt + "x " + itemName);
-            purchase.remaining = 0;
-            it.remove();
-            claimedAny = true;
-            break; // only claim one purchase at a time
-        }
-
-        if (!claimedAny) {
-            player.addChatMessage(new ChatComponentText("No pending buy order found for: " + itemName));
+            player.addChatMessage(new ChatComponentText(
+                    "§aClaimed " + amount + "x " + itemName + " for " + String.format("%,.2f", price * amount)
+            ));
+        } else {
+            player.addChatMessage(new ChatComponentText(
+                    "§aRecorded claim of " + amount + "x " + itemName + " for " + String.format("%,.2f", price * amount)
+            ));
         }
     }
 }
