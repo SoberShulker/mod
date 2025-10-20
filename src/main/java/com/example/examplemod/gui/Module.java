@@ -1,28 +1,48 @@
 package com.example.examplemod.gui;
 
-import net.minecraft.entity.player.EntityPlayer;
+import org.lwjgl.input.Keyboard;
 
 public class Module {
 
     private final String name;
-    private boolean enabled;
     private final Category category;
-    private int color = 0x00FF00;
+    private boolean enabled = false;
+    private int keyBind = Keyboard.KEY_NONE; // default: no key bound
 
-    public Module(String name, boolean defaultState, Category category) {
+    public Module(String name, boolean b, Category category) {
         this.name = name;
-        this.enabled = defaultState;
         this.category = category;
     }
 
-    public String getName() { return name; }
-    public boolean isEnabled() { return enabled; }
-    public void toggle() { enabled = !enabled; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
-    public Category getCategory() { return category; }
-    public int getColor() { return color; }
-    public void setColor(int color) { this.color = color; }
+    // --- Module properties ---
 
-    public void onTick(EntityPlayer player) {
+    public String getName() {
+        return name;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void toggle() {
+        this.enabled = !this.enabled;
+    }
+
+    // --- Keybind management ---
+
+    public int getKeyBind() {
+        return keyBind;
+    }
+
+    public void setKeyBind(int key) {
+        this.keyBind = key;
+    }
+
+    public boolean isKeyPressed() {
+        return keyBind != Keyboard.KEY_NONE && Keyboard.isKeyDown(keyBind);
     }
 }

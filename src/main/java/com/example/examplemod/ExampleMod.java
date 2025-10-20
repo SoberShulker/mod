@@ -1,13 +1,11 @@
 package com.example.examplemod;
 
+import com.example.examplemod.commands.*;
 import com.example.examplemod.helpers.BazaarHelper;
-import com.example.examplemod.commands.ChatClearCommand;
-import com.example.examplemod.commands.TestBuyCommand;
-import com.example.examplemod.commands.TestSellCommand;
-import com.example.examplemod.commands.TotalProfitCommand;
 import com.example.examplemod.gui.ClickGUI;
 import com.example.examplemod.gui.Module;
 import com.example.examplemod.gui.ModuleManager;
+import com.example.examplemod.modules.misc.AutoJump;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
@@ -34,11 +32,11 @@ public class ExampleMod {
 
     @Mod.EventHandler
     public void serverLoad(FMLServerStartingEvent event) {
-
         event.registerServerCommand(new TestBuyCommand());
         event.registerServerCommand(new TestSellCommand());
         event.registerServerCommand(new TotalProfitCommand());
         event.registerServerCommand(new ChatClearCommand());
+        event.registerServerCommand(new OpenGUICommand());
     }
 
     @Mod.EventHandler
@@ -68,17 +66,16 @@ public class ExampleMod {
     @SubscribeEvent
     @SideOnly(Side.CLIENT)
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        // Only run on client side and at end of tick
         if (!event.player.worldObj.isRemote || event.phase != TickEvent.Phase.END) return;
 
         EntityPlayer player = event.player;
 
-        // Tick all enabled modules
-        for (int i = 0; i < ModuleManager.modules.size(); i++) {
-            Module m = ModuleManager.modules.get(i);
-            if (m.isEnabled()) {
-                m.onTick(player);
+        // Tick enabled modules individually
+        for (Module m : ModuleManager.modules) {
+            if (m.isEnabled() && m instanceof AutoJump) {
+                ((AutoJump) m).tick(player);
             }
+            // Future modules can be handled similarly
         }
     }
 }

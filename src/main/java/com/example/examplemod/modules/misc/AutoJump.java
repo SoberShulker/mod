@@ -15,8 +15,8 @@ public class AutoJump extends Module {
         super("Auto Jump", true, Category.MISC);
     }
 
-    @Override
-    public void onTick(EntityPlayer player) {
+    // Renamed from onTick to tick
+    public void tick(EntityPlayer player) {
         Minecraft mc = Minecraft.getMinecraft();
         boolean isSingleplayer = mc.isSingleplayer();
 

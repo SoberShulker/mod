@@ -28,4 +28,13 @@ public class ModuleManager {
         }
         return null;
     }
+
+    // === NEW: get modules by category ===
+    public static List<Module> getModulesByCategory(Category category) {
+        List<Module> result = new ArrayList<Module>();
+        for (Module m : modules) {
+            if (m.getCategory() == category) result.add(m);
+        }
+        return result;
+    }
 }
