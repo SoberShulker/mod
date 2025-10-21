@@ -5,7 +5,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;
 
-import com.example.examplemod.helpers.EconomyData;
+import com.example.examplemod.listeners.BazaarChatListener;
 
 public class TotalProfitCommand extends CommandBase {
 
@@ -24,12 +24,13 @@ public class TotalProfitCommand extends CommandBase {
         if (!(sender instanceof EntityPlayer)) return;
         EntityPlayer player = (EntityPlayer) sender;
 
-        double totalSpent = EconomyData.getTotalSpent();
-        double totalEarned = EconomyData.getTotalEarned();
-        double profit = EconomyData.getTotalProfit();
-
-        player.addChatMessage(new ChatComponentText("§aTotal Spent: " + totalSpent));
-        player.addChatMessage(new ChatComponentText("§aTotal Earned: " + totalEarned));
-        player.addChatMessage(new ChatComponentText("§aTotal Profit: " + profit));
+        // Use BazaarChatListener's allPurchases to get totals
+        double totalSpent = BazaarChatListener.getTotalSpent();
+        double totalEarned = BazaarChatListener.getTotalEarned();
+        double profit = BazaarChatListener.getTotalProfit();
+        // Send messages to player
+        player.addChatMessage(new ChatComponentText("§aTotal Spent: " + String.format("%,.2f", totalSpent) + " coins"));
+        player.addChatMessage(new ChatComponentText("§aTotal Earned: " + String.format("%,.2f", totalEarned) + " coins"));
+        player.addChatMessage(new ChatComponentText("§aTotal Profit: " + String.format("%,.2f", profit) + " coins"));
     }
 }

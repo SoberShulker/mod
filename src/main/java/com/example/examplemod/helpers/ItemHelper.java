@@ -1,6 +1,5 @@
 package com.example.examplemod.helpers;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -11,18 +10,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-/**
- * Handles item lore, price tracking, and Hypixel-style item lookup.
- * Fully Forge 1.8 + Java 6 compatible.
- */
 public class ItemHelper {
 
-    public static final Map<String, Double> lastPurchasePrices = new HashMap<String, Double>();
     private static final Map<String, Item> plainCache = new HashMap<String, Item>();
     private static final Map<String, Item> enchantedCache = new HashMap<String, Item>();
     private static boolean cacheInitialized = false;
 
-    /** Force-correct lore injection (1.8 safe) */
+    /**
+     * Safely adds a line of lore to an ItemStack.
+     * All numeric formatting should use formatCoins().
+     */
     public static void addLore(ItemStack stack, String line) {
         if (stack == null) return;
 
@@ -49,31 +46,13 @@ public class ItemHelper {
 
         loreList.appendTag(new NBTTagString(line));
         display.setTag("Lore", loreList);
+        tag.setTag("display", display);
         stack.setTagCompound(tag);
     }
 
-    /** Give a player an item with lore & tracked price */
-    public static void giveItemWithPrice(EntityPlayer player, ItemStack stack, double price) {
-        giveItemWithPrice(player, stack, price, stack.stackSize);
-    }
-
-    public static void giveItemWithPrice(EntityPlayer player, ItemStack stack, double price, int amount) {
-        if (stack == null || player == null || amount <= 0) return;
-
-        ItemStack copy = stack.copy();
-        copy.stackSize = amount;
-
-        lastPurchasePrices.put(copy.getDisplayName(), price);
-        addLore(copy, "§aPaid: " + String.format("%,.2f", price) + " coins each");
-
-        if (!player.inventory.addItemStackToInventory(copy)) {
-            player.dropPlayerItemWithRandomChoice(copy, false);
-        }
-        player.inventory.markDirty();
-        player.openContainer.detectAndSendChanges();
-    }
-
-    /** Get an item by Hypixel-style name */
+    /**
+     * Returns an Item by name (plain or enchanted), using a cached map for efficiency.
+     */
     public static Item getItemByName(String name) {
         if (name == null) return null;
         initializeCache();
@@ -89,11 +68,12 @@ public class ItemHelper {
         Map map = enchanted ? enchantedCache : plainCache;
         if (map.containsKey(cleaned)) return (Item) map.get(cleaned);
 
-        Item fallback = Item.getByNameOrId(name);
-        return fallback;
+        return Item.getByNameOrId(name);
     }
 
-    /** Build cache once */
+    /**
+     * Initializes the plain and enchanted item caches (only once).
+     */
     private static void initializeCache() {
         if (cacheInitialized) return;
 
@@ -113,5 +93,13 @@ public class ItemHelper {
         }
 
         cacheInitialized = true;
+    }
+
+    /**
+     * Formats a double into a string with commas and two decimals,
+     * safely removing any non-breaking spaces that Minecraft cannot render.
+     */
+    public static String formatCoins(double amount) {
+        return String.format("%,.2f", amount).replace("\u00A0", "");
     }
 }

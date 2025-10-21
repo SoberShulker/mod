@@ -1,7 +1,6 @@
 package com.example.examplemod;
 
 import com.example.examplemod.commands.*;
-import com.example.examplemod.helpers.BazaarHelper;
 import com.example.examplemod.gui.ClickGUI;
 import com.example.examplemod.gui.Module;
 import com.example.examplemod.gui.ModuleManager;
@@ -20,7 +19,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Keyboard;
 import com.example.examplemod.listeners.BazaarChatListener;
-import com.example.examplemod.listeners.InventoryChangeListener;
 
 @Mod(modid = ExampleMod.MODID, name = ExampleMod.NAME, version = ExampleMod.VERSION)
 public class ExampleMod {
@@ -34,25 +32,15 @@ public class ExampleMod {
 
     @Mod.EventHandler
     public void serverLoad(FMLServerStartingEvent event) {
-        event.registerServerCommand(new TestBuyCommand());
-        event.registerServerCommand(new TestSellCommand());
         event.registerServerCommand(new TotalProfitCommand());
-        event.registerServerCommand(new ChatClearCommand());
-        event.registerServerCommand(new OpenGUICommand());
-        event.registerServerCommand(new TestBazaarMsgCommand());
-        event.registerServerCommand(new TestClaimOrderCommand());
         event.registerServerCommand(new ToggleBazaarDebugCommand());
-        event.registerServerCommand(new TestCreateOrderCommand());
-        event.registerServerCommand(new TestClaimOrderCommand());
-        event.registerServerCommand(new ListFakeOrdersCommand());
+        event.registerServerCommand(new TestBazaarCommand());
     }
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(new BazaarHelper());
         MinecraftForge.EVENT_BUS.register(new BazaarChatListener());
-        MinecraftForge.EVENT_BUS.register(new InventoryChangeListener());
 
         if (event.getSide() == Side.CLIENT) {
             initClientKeybinds();
